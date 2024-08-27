@@ -35,10 +35,10 @@ export default function Clothes() {
 
     return (
         <View style={styles.container}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 40, paddingHorizontal: 20 }}>
+            <View style={styles.header}>
                 <Text style={styles.title}>Armário</Text>
                 <TouchableOpacity onPress={() => { router.push('/clothes/addClothing') }}>
-                    <   FontAwesome5 name="camera" size={22} />
+                    <FontAwesome5 name="camera" size={22} />
                 </TouchableOpacity>
             </View>
 
@@ -50,8 +50,8 @@ export default function Clothes() {
                 renderTabBar={props =>
                     <TabBar
                         {...props}
-                        indicatorStyle={{ backgroundColor: '#593C9D' }}
-                        style={{ backgroundColor: "rgba(52, 52, 52, alpha)", marginTop: 5, elevation: 0, borderBottomWidth: 1, borderBottomColor: "rgba(0, 0, 0, 0.37)" }}
+                        indicatorStyle={styles.indicator}
+                        style={styles.tabBar}
                         labelStyle={styles.label}
                         scrollEnabled={true}
                         tabStyle={styles.tabStyle}
@@ -67,12 +67,29 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: 5
     },
+    header: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingTop: 40,
+        paddingHorizontal: 20,
+    },
     title: {
-        fontWeight: "500",
-        fontSize: 22
+        fontWeight: "600",
+        fontSize: 26,
+    },
+    tabBar: {
+        backgroundColor: '#593C9D', // Cor de fundo da barra horizontal
+        marginTop: 5,
+        elevation: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(0, 0, 0, 0.37)",
+    },
+    indicator: {
+        backgroundColor: '#fff', // Cor do indicador, ajuste conforme necessário
     },
     label: {
-        color: 'black',
+        color: 'white', // Cor das labels, ajuste conforme necessário
         fontSize: 14,
         textTransform: 'none',
     },

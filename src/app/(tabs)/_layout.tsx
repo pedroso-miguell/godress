@@ -1,4 +1,5 @@
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
 
 export default function TabLayout() {
@@ -16,8 +17,8 @@ export default function TabLayout() {
                 name="clothes"
                 options={{
                     headerShown: false,
-                    title: 'Clothes',
-                    tabBarIcon: ({ color }) => <FontAwesome5 size={22} name="tshirt" color={color} />,
+                    title: 'Armário',
+                    tabBarIcon: ({ color }) => <MaterialCommunityIcons name="hanger" size={24} color={color} />
                 }}
             />
         </Tabs>

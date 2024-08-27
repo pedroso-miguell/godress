@@ -157,7 +157,10 @@ export default function Home() {
                 <Text style={styles.title}>{surname ? surname : "..."}</Text>
             </View>
             <TouchableOpacity onPress={handleLogout}>
-                <Text style={{ color: "grey", fontWeight: "500" }}>Logout</Text>
+                <Text style={{ color: "grey", fontWeight: "500" }}>Que tal esse Look para hoje?</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout}>
+                <Text style={{ color: "grey", fontWeight: "500" }}><MaterialIcons name="logout" size={24} color="black" /></Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => { router.push('/clothes/favClothes') }}>
@@ -284,8 +287,9 @@ const styles = StyleSheet.create({
         gap: 5
     },
     title: {
-        fontWeight: "500",
-        fontSize: 22
+        fontWeight: "700",
+        fontSize: 26,
+        paddingTop: 60,
     },
     text: {
         fontWeight: "400",

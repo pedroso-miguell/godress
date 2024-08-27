@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { router, Link } from 'expo-router';
 import * as yup from 'yup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import Api from '@/src/services/api';
+import { router } from 'expo-router';
 
 type FormData = {
     token: string;
@@ -23,11 +22,21 @@ const registerSchema = yup.object({
         .matches(/[0-9]/, 'Senha deve conter pelo menos um número')
         .matches(/[!@#$%^&*(),.?":{}|<>]/, 'Senha deve conter pelo menos um caractere especial')
         .required('Senha é obrigatória'),
-    confirm_password: yup.string().required('Confirme a senha').oneOf([yup.ref('password')], 'As senhas devem ser iguais!')
+    confirm_password: yup.string()
+        .required('Confirme a senha')
+        .oneOf([yup.ref('password')], 'As senhas devem ser iguais!')
 }).required();
 
-export default function resetPassword() {
-    const [resultData, setResultData] = useState(null);
+interface ApiError {
+    response?: {
+        data?: {
+            msg: string;
+        };
+    };
+}
+
+export default function ResetPassword() {
+    const [resultData, setResultData] = useState<string | null>(null);
 
     const form = useForm<FormData>({
         defaultValues: {
@@ -43,47 +52,41 @@ export default function resetPassword() {
     const resendToken = async () => {
         const email = await AsyncStorage.getItem('userEmail');
 
-        await Api.post('/auth/forgot_password', {
-            email: email
-        })
-            .then(async function (response) {
-                console.log(response.data);
-                setResultData(response.data.msg);
-                reset();
-            })
-            .catch(function (error) {
-                console.log(error.response.data);
-                setResultData(error.response.data.msg);
-            });
+        try {
+            const response = await Api.post('/auth/forgot_password', { email });
+            setResultData(response.data.msg);
+            reset();
+        } catch (error) {
+            const apiError = error as ApiError;
+            console.error(apiError.response?.data);
+            setResultData(apiError.response?.data?.msg || 'Ocorreu um erro.');
+        }
     }
-
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         const email = await AsyncStorage.getItem('userEmail')
 
-        await Api.post('/auth/reset_password', {
-            email: email,
-            token: data.token,
-            password: data.password
-        })
-            .then(async function (response) {
-                console.log(response.data);
-                setResultData(response.data.msg);
-                reset();
-
-                await AsyncStorage.removeItem('userEmail');
-
-                router.replace('/');
-            })
-            .catch(function (error) {
-                console.log(error.response.data);
-                setResultData(error.response.data.msg);
+        try {
+            const response = await Api.post('/auth/reset_password', {
+                email,
+                token: data.token,
+                password: data.password
             });
-
+            setResultData(response.data.msg);
+            reset();
+            await AsyncStorage.removeItem('userEmail');
+            router.replace('/');
+        } catch (error) {
+            const apiError = error as ApiError;
+            console.error(apiError.response?.data);
+            setResultData(apiError.response?.data?.msg || 'Ocorreu um erro.');
+        }
     };
 
     return (
         <View style={styles.container}>
+            <Text style={styles.title}>Redefinir Senha</Text>
+            <Text style={styles.subtitle}>Digite o código e a nova senha para redefinir sua senha.</Text>
 
             <Controller
                 control={control}
@@ -101,6 +104,7 @@ export default function resetPassword() {
                     </>
                 )}
             />
+
             <Controller
                 control={control}
                 name="password"
@@ -112,12 +116,13 @@ export default function resetPassword() {
                             placeholder="Nova senha"
                             value={value}
                             autoCapitalize="none"
-                            secureTextEntry={true}
+                            secureTextEntry
                         />
                         {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
                     </>
                 )}
             />
+
             <Controller
                 control={control}
                 name="confirm_password"
@@ -129,24 +134,25 @@ export default function resetPassword() {
                             placeholder="Confirmar senha"
                             value={value}
                             autoCapitalize="none"
-                            secureTextEntry={true}
+                            secureTextEntry
                         />
                         {errors.confirm_password && <Text style={styles.error}>{errors.confirm_password.message}</Text>}
                     </>
                 )}
             />
-            <View style={{ marginTop: 50, gap: 10 }}>
-                <TouchableOpacity style={{ borderRadius: 5, paddingVertical: 10, width: "100%", alignItems: "center", backgroundColor: "grey" }} onPress={resendToken}>
-                    <Text style={{ color: "#fff", fontWeight: "500" }}>Reenviar código</Text>
+
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.resendButton} onPress={resendToken}>
+                    <Text style={styles.buttonText}>Reenviar código</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={{ borderRadius: 5, paddingVertical: 10, width: "100%", alignItems: "center", backgroundColor: "#593C9D" }} onPress={handleSubmit(onSubmit)}>
-                    <Text style={{ color: "#fff", fontWeight: "500" }}>Alterar senha</Text>
+                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)}>
+                    <Text style={styles.buttonText}>Alterar senha</Text>
                 </TouchableOpacity>
             </View>
 
             {resultData && (
                 <View style={styles.resultContainer}>
-                    <Text style={{ fontWeight: "500", marginBottom: 10 }}>Status:</Text>
+                    <Text style={styles.resultTitle}>Status:</Text>
                     <Text style={styles.resultText}>{resultData}</Text>
                 </View>
             )}
@@ -157,31 +163,66 @@ export default function resetPassword() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "center",
+        justifyContent: 'center',
         paddingVertical: 40,
         paddingHorizontal: 20,
-        gap: 10
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '600',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#666',
+        marginBottom: 30,
+        textAlign: 'center',
     },
     input: {
-        backgroundColor: "#fff",
-        padding: 10,
-        width: "100%",
+        backgroundColor: '#fff',
+        padding: 15,
         borderWidth: 1,
+        borderColor: '#ddd',
         borderRadius: 5,
+        marginBottom: 10,
     },
     error: {
         color: 'red',
-        alignSelf: 'flex-start',
-        fontSize: 10,
-        fontWeight: "500"
+        fontSize: 12,
+        marginTop: -10,
+        marginBottom: 10,
+    },
+    buttonContainer: {
+        marginTop: 30,
+        gap: 15,
+    },
+    resendButton: {
+        backgroundColor: '#ddd',
+        borderRadius: 5,
+        paddingVertical: 15,
+        alignItems: 'center',
+    },
+    submitButton: {
+        backgroundColor: '#593C9D',
+        borderRadius: 5,
+        paddingVertical: 15,
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: '500',
+        fontSize: 16,
     },
     resultContainer: {
         marginTop: 20,
-        padding: 10,
+        padding: 15,
         borderRadius: 5,
         backgroundColor: '#f5f5f5',
-        width: '100%',
-        gap: 10
+    },
+    resultTitle: {
+        fontWeight: '500',
+        marginBottom: 10,
     },
     resultText: {
         fontSize: 14,

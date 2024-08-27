@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, Image } from 'react-native';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { router, Link } from 'expo-router';
 import * as yup from 'yup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import Api from '@/src/services/api';
 import { useClothes } from '@/src/services/contexts/clothesContext';
@@ -21,7 +22,8 @@ const registerSchema = yup.object({
 
 export default function Login() {
     const [resultData, setResultData] = useState(null);
-    const { getClothes } = useClothes()
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false); // Estado inicia como false (olho fechado)
+    const { getClothes } = useClothes();
 
     const form = useForm<FormData>({
         defaultValues: {
@@ -52,59 +54,77 @@ export default function Login() {
                 console.log(error.response.data);
                 setResultData(error.response.data.msg);
             });
-
     };
 
     return (
         <View style={styles.container}>
-            <Controller
-                control={control}
-                name="email"
-                render={({ field: { value, onChange } }) => (
-                    <>
-                        <TextInput
-                            style={styles.input}
-                            onChangeText={onChange}
-                            placeholder="Email"
-                            value={value}
-                            autoCapitalize="none"
-                        />
-                        {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
-                    </>
-                )}
-            />
-            <Controller
-                control={control}
-                name="password"
-                render={({ field: { value, onChange } }) => (
-                    <>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Senha"
-                            onChangeText={onChange}
-                            value={value}
-                            secureTextEntry={true}
-                            autoCapitalize="none"
-                        />
-                        {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
-                    </>
-                )}
-            />
-
-            <TouchableOpacity>
-                <Link href={"/auth/forgotPassword/sendEmail"} style={{ textDecorationLine: "underline" }}>Esqueci a senha</Link>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <Icon name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
+            <View style={styles.topContainer}>
+                <Text style={styles.title}>Faça Login</Text>
+                <Image
+                    source={require('../../../assets/images/Gzao.png')}
+                    style={styles.image}
+                />
+            </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
-                <Text style={{ color: "#fff", fontWeight: "500" }}>Entrar</Text>
-            </TouchableOpacity>
+            <View style={styles.formContainer}>
+                <Controller
+                    control={control}
+                    name="email"
+                    render={({ field: { value, onChange } }) => (
+                        <>
+                            <TextInput
+                                style={styles.input}
+                                onChangeText={onChange}
+                                placeholder="Email"
+                                value={value}
+                                autoCapitalize="none"
+                            />
+                            {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
+                        </>
+                    )}
+                />
+                <Controller
+                    control={control}
+                    name="password"
+                    render={({ field: { value, onChange } }) => (
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Senha"
+                                onChangeText={onChange}
+                                value={value}
+                                secureTextEntry={!isPasswordVisible} // Senha está oculta quando isPasswordVisible é false
+                                autoCapitalize="none"
+                            />
+                            <TouchableOpacity
+                                style={styles.eyeIcon}
+                                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                            >
+                                <Icon name={isPasswordVisible ? "eye" : "eye-off"} size={24} color="#000" /> 
+                            </TouchableOpacity>
+                            {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
+                        </View>
+                    )}
+                />
 
-            {resultData && (
-                <View style={styles.resultContainer}>
-                    <Text style={{ fontWeight: "500", marginBottom: 10 }}>Status:</Text>
-                    <Text style={styles.resultText}>{resultData}</Text>
-                </View>
-            )}
+                <TouchableOpacity>
+                    <Link href={"/auth/forgotPassword/sendEmail"} style={styles.link}>Esqueci a senha</Link>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
+                    <Text style={styles.buttonText}>Entrar</Text>
+                </TouchableOpacity>
+
+                {resultData && (
+                    <View style={styles.resultContainer}>
+                        <Text style={{ fontWeight: "500", marginBottom: 10 }}>Status:</Text>
+                        <Text style={styles.resultText}>{resultData}</Text>
+                    </View>
+                )}
+            </View>
         </View>
     );
 }
@@ -112,31 +132,69 @@ export default function Login() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "center",
+        justifyContent: 'space-between',
         paddingVertical: 40,
         paddingHorizontal: 20,
-        gap: 10
+    },
+    topContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+        paddingTop: 100,
+    },
+    backButton: {
+        marginRight: 10,
+    },
+    image: {
+        width: 60,
+        height: 70,
+        marginLeft: 70,
+    },
+    title: {
+        fontSize: 40,
+        fontWeight: '400',
+        textAlign: 'center',
+    },
+    formContainer: {
+        flex: 1,
+        justifyContent: 'center',
     },
     button: {
-        backgroundColor: "#593C9D",
+        backgroundColor: '#593C9D',
         borderRadius: 5,
-        paddingVertical: 10,
-        width: "100%",
-        alignItems: "center",
-        marginTop: 50,
+        paddingVertical: 15,
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    buttonText: {
+        color: "#fff",
+        fontWeight: "700",
+        fontSize: 18,  
     },
     input: {
-        backgroundColor: "#fff",
+        backgroundColor: '#fff',
         padding: 10,
-        width: "100%",
+        width: '100%',
         borderWidth: 1,
         borderRadius: 5,
+        marginBottom: 10,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    eyeIcon: {
+        position: 'absolute',
+        right: 10,
+        padding: 10,
     },
     error: {
         color: 'red',
         alignSelf: 'flex-start',
         fontSize: 10,
-        fontWeight: "500"
+        fontWeight: '500',
+        marginBottom: 10,
     },
     resultContainer: {
         marginTop: 20,
@@ -144,9 +202,15 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         backgroundColor: '#f5f5f5',
         width: '100%',
-        gap: 10
+        gap: 10,
     },
     resultText: {
         fontSize: 14,
+    },
+    link: {
+        textDecorationLine: "underline",
+        color: "#593C9D",
+        alignSelf: 'flex-start',
+        marginBottom: 20,
     },
 });
