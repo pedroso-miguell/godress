@@ -9,6 +9,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import Api from '@/src/services/api';
 import { useClothes } from '@/src/services/contexts/clothesContext';
+import LoadingScreen from '../../hooks/LoadingScreen'; // Importa o componente de tela de carregamento
 
 type FormData = {
     email: string;
@@ -21,8 +22,9 @@ const registerSchema = yup.object({
 }).required();
 
 export default function Login() {
-    const [resultData, setResultData] = useState(null);
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false); // Estado inicia como false (olho fechado)
+    const [resultData, setResultData] = useState<string | null>(null);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false); 
+    const [loading, setLoading] = useState(false); // Estado de carregamento
     const { getClothes } = useClothes();
 
     const form = useForm<FormData>({
@@ -36,25 +38,37 @@ export default function Login() {
     const { handleSubmit, control, formState: { errors }, reset } = form;
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
-        await Api.post('/auth/login', {
-            ...data
-        })
-            .then(async function (response) {
-                console.log(response.data);
-                setResultData(response.data.msg);
-                reset();
+        setLoading(true); // Inicia o carregamento
 
-                const { token } = response.data;
-                await AsyncStorage.setItem('jwtToken', token);
+        try {
+            const response = await Api.post('/auth/login', data);
+            console.log(response.data);
+            setResultData(response.data.msg);
+            reset();
 
-                getClothes();
-                router.replace('(tabs)');
-            })
-            .catch(function (error) {
-                console.log(error.response.data);
-                setResultData(error.response.data.msg);
-            });
+            const { token } = response.data;
+            await AsyncStorage.setItem('jwtToken', token);
+
+            getClothes();
+            router.replace('(tabs)'); // Navega para as tabs após o login
+        } catch (error) {
+            if (error instanceof Error) {
+                console.log(error.message);
+            } else if (typeof error === 'object' && error !== null && 'response' in error) {
+                const err = error as { response: { data: { msg: string } } };
+                console.log(err.response.data);
+                setResultData(err.response.data.msg);
+            } else {
+                console.error('Unexpected error', error);
+            }
+        } finally {
+            setLoading(false); // Para o carregamento
+        }
     };
+
+    if (loading) {
+        return <LoadingScreen />; // Retorna a tela de carregamento se estiver carregando
+    }
 
     return (
         <View style={styles.container}>
@@ -96,7 +110,7 @@ export default function Login() {
                                 placeholder="Senha"
                                 onChangeText={onChange}
                                 value={value}
-                                secureTextEntry={!isPasswordVisible} // Senha está oculta quando isPasswordVisible é false
+                                secureTextEntry={!isPasswordVisible}
                                 autoCapitalize="none"
                             />
                             <TouchableOpacity

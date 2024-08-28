@@ -79,17 +79,17 @@ const styles = StyleSheet.create({
         fontSize: 26,
     },
     tabBar: {
-        backgroundColor: '#593C9D', // Cor de fundo da barra horizontal
+        backgroundColor: '#593C9D', 
         marginTop: 5,
         elevation: 0,
         borderBottomWidth: 1,
         borderBottomColor: "rgba(0, 0, 0, 0.37)",
     },
     indicator: {
-        backgroundColor: '#fff', // Cor do indicador, ajuste conforme necessário
+        backgroundColor: '#fff', 
     },
     label: {
-        color: 'white', // Cor das labels, ajuste conforme necessário
+        color: 'white', 
         fontSize: 14,
         textTransform: 'none',
     },

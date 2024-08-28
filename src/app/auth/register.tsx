@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -35,9 +35,10 @@ const registerSchema = yup.object({
 }).required();
 
 export default function Register() {
-  const [resultData, setResultData] = useState(null);
+  const [resultData, setResultData] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false); // Começa com a senha oculta (olho fechado)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Começa com a senha de confirmação oculta (olho fechado)
+  const [loading, setLoading] = useState(false); // Estado de carregamento
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -53,22 +54,33 @@ export default function Register() {
   const { handleSubmit, control, formState: { errors }, reset } = form;
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    await Api.post('/auth/register', {
-      name: data.name,
-      surname: data.surname,
-      email: data.email,
-      password: data.password,
-    })
-      .then(function (response) {
-        console.log(response.data);
-        setResultData(response.data.msg);
-        router.navigate('/auth/login');
-        reset();
-      })
-      .catch(function (error) {
-        console.log(error.response.data);
-        setResultData(error.response.data.msg);
+    setLoading(true); // Inicia o carregamento
+
+    try {
+      const response = await Api.post('/auth/register', {
+        name: data.name,
+        surname: data.surname,
+        email: data.email,
+        password: data.password,
       });
+      console.log(response.data);
+      setResultData(response.data.msg);
+      router.navigate('/auth/login');
+      reset();
+    } catch (error) {
+      if (error instanceof Error) {
+        console.log(error.message);
+        setResultData(error.message);
+      } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        const err = error as { response: { data: { msg: string } } };
+        console.log(err.response.data);
+        setResultData(err.response.data.msg);
+      } else {
+        console.error('Unexpected error', error);
+      }
+    } finally {
+      setLoading(false); // Para o carregamento
+    }
   };
 
   return (
@@ -92,7 +104,7 @@ export default function Register() {
           render={({ field: { value, onChange } }) => (
             <>
               <TextInput
-                style={styles.input}
+                style={[styles.input, styles.textInput]}
                 placeholder="Nome"
                 onChangeText={onChange}
                 value={value}
@@ -107,7 +119,7 @@ export default function Register() {
           render={({ field: { value, onChange } }) => (
             <>
               <TextInput
-                style={styles.input}
+                style={[styles.input, styles.textInput]}
                 placeholder="Sobrenome"
                 onChangeText={onChange}
                 value={value}
@@ -122,7 +134,7 @@ export default function Register() {
           render={({ field: { value, onChange } }) => (
             <>
               <TextInput
-                style={styles.input}
+                style={[styles.input, styles.textInput]}
                 onChangeText={onChange}
                 placeholder="Email"
                 value={value}
@@ -137,9 +149,9 @@ export default function Register() {
           name="password"
           render={({ field: { value, onChange } }) => (
             <>
-              <View style={styles.passwordContainer}>
+              <View style={styles.inputContainer}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, styles.textInput]}
                   placeholder="Senha"
                   onChangeText={onChange}
                   value={value}
@@ -162,9 +174,9 @@ export default function Register() {
           name="confirm_password"
           render={({ field: { value, onChange } }) => (
             <>
-              <View style={styles.passwordContainer}>
+              <View style={styles.inputContainer}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, styles.textInput]}
                   placeholder="Confirmar senha"
                   onChangeText={onChange}
                   value={value}
@@ -173,7 +185,7 @@ export default function Register() {
                 />
                 <TouchableOpacity
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={styles.showPasswordIcon}
+                  style={styles.showConfirmPasswordIcon}
                 >
                   <Ionicons name={showConfirmPassword ? 'eye' : 'eye-off'} size={24} color="black" />
                 </TouchableOpacity>
@@ -187,13 +199,20 @@ export default function Register() {
           <Text style={styles.buttonText}>Cadastrar</Text>
         </TouchableOpacity>
 
-        {resultData && (
+        {resultData && !loading && (
           <View style={styles.resultContainer}>
             <Text style={{ fontWeight: '500', marginBottom: 10 }}>Status:</Text>
             <Text style={styles.resultText}>{resultData}</Text>
           </View>
         )}
       </View>
+
+      {loading && (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="#593C9D" />
+          <Text style={styles.loadingText}>Cadastrando...</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -235,49 +254,70 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#593C9D',
     borderRadius: 5,
-    paddingVertical: 15,
+    paddingVertical: 12, // Ajusta o padding vertical
     width: '100%',
     alignItems: 'center',
     marginTop: 20,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '700',
     fontSize: 18,
+    fontWeight: '600',
   },
   input: {
-    backgroundColor: '#fff',
-    padding: 10,
-    width: '100%',
+    borderColor: '#B0B0B0',
     borderWidth: 1,
     borderRadius: 5,
-    marginBottom: 10,
+    paddingHorizontal: 10, // Ajusta o padding horizontal
+    paddingVertical: 8, // Ajusta o padding vertical
+    marginVertical: 5,
+    fontSize: 16,
+  },
+  inputContainer: {
+    position: 'relative',
+    marginVertical: 5,
+  },
+  textInput: {
+    fontSize: 16,
+  },
+  error: {
+    color: 'red',
+    fontSize: 12,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
   },
   showPasswordIcon: {
     position: 'absolute',
     right: 10,
+    top: 15,
   },
-  error: {
-    color: 'red',
-    alignSelf: 'flex-start',
-    fontSize: 10,
-    fontWeight: '500',
+  showConfirmPasswordIcon: {
+    position: 'absolute',
+    right: 10,
+    top: 15,
   },
   resultContainer: {
     marginTop: 20,
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center',
   },
   resultText: {
-    color: '#333',
     fontSize: 16,
-    textAlign: 'center',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#fff',
   },
 });
